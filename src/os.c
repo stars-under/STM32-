@@ -63,6 +63,7 @@ void os_update_service()
         并找出下一个线程的栈地址.随后写入PSP并软件出栈(8个).
         return后随着中断出栈将PC带出栈
 */
+//在版本号小于100时使用c语言内置汇编,大于100时请开启.s汇编的编译
 #if (os_version <= 100U)
 void SysTick_Handler()
 {
