@@ -1,9 +1,5 @@
 #include "os.h"
 
-/*
-
-*/
-
 //系统当前信息
 volatile os_system system_information = {0, 0, 0};
 
