@@ -1,7 +1,11 @@
 #ifndef __OS_H_
 #define __OS_H_
-#include "stm32f10x.h"
-#include "core_cm3.h"
+
+#include "os_include.h"
+
+
+#define EXPERIMENT
+
 #define os_version (102U)
 
 #define MAX_thread 16
@@ -38,6 +42,10 @@ typedef struct os_system
     uint32_t SYS_TIME;
     //线程数量
     uint32_t thread_num;
+    #ifdef EXPERIMENT
+    uint32_t next_pid;
+    #endif // DEBUG
+
 } os_system;
 
 //线程信息结构体
@@ -55,11 +63,12 @@ typedef struct THREAD
         0       0        0        0        0        0        0        0
                                                   |         状态位      |
        状态位:
+            000(0)     死亡(或没有该线程)
             001(1)     正常
             010(2)     休眠
             011(3)     休眠并挂起(等待其他程序唤醒或超时唤醒)
             100(4)     挂起(等待其他程序唤醒)
-            101(5)     死亡(或没有该线程)
+            101(5)     同(0)
     */
     unsigned char thread_state;
     //休眠时间
@@ -68,8 +77,12 @@ typedef struct THREAD
     unsigned char priority;
     //事实优先级
     unsigned char actual_priority;
+    //reboot PC
+    unsigned int reboot_pc;
+    //parameter
+    unsigned int parameter;
 
-#ifdef __CORE_CM4_H_DEPENDANT
+#if defined(__VFP_FP__) && !defined(__SOFTFP__)
     //M4需要EXC_RETURN(中断返回值判断是否启用了浮点运算单元)
     uint32_t EXC_RETURN;
 #endif
@@ -113,6 +126,8 @@ volatile extern os_system system_information;
 //栈区域
 volatile extern uint32_t stack[(THREAD_stack_size)*MAX_thread];
 
+void PendSV_Init();
+
 /*
 *   功能:延时固定的时间(单位:ms)
 *
@@ -140,7 +155,7 @@ typedef struct new_thread_information
 *
 *   @return 无输出
 */
-void sys_time_init(u32 usCount);
+void sys_time_init(uint32_t usCount);
 
 /*
 *   功能:新建线程
@@ -150,6 +165,44 @@ void sys_time_init(u32 usCount);
 *   @return 返回线程id
 */
 uint32_t newlyBuild_thread(new_thread_information_pointer new_thread);
+
+/*
+*   功能:新建线程(指定栈的位置)
+*
+*   @param new_thread 指向线程信息的结构体指针
+*
+*   @param stack 栈地址
+*
+*   @return 返回线程id
+*/
+uint32_t newlyBuild_thread_stack(new_thread_information_pointer new_thread, void *stack);
+
+/*
+*   功能:重启线程
+*
+*   @param id 线程id
+*
+*   @return ok return 1 and on return 0
+*/
+uint32_t reboot_thread(unsigned int id);
+
+/*
+*   功能:挂起线程
+*
+*   @param id 线程id
+*
+*   @return ok return 1 and on return 0
+*/
+uint32_t hang_thread(unsigned int id);
+
+/*
+*   功能:将挂起线程恢复
+*
+*   @param id 线程id
+*
+*   @return ok return 1 and on return 0
+*/
+uint32_t cancel_hang_thread(unsigned int id);
 
 /*
 *   功能:启动一个线程
@@ -246,7 +299,7 @@ uint32_t thread_Dormant();
 static inline uint32_t lookup_pid(uint32_t pid)
 {
     unsigned char i = 0;
-    unsigned pid_actual = 1;
+    unsigned pid_actual = pid;
     //为了让优先级更均匀 循环查找MAX_thread-1个线程
     for (i = 0; i < MAX_thread - 1; i++)
     {
@@ -263,7 +316,7 @@ static inline uint32_t lookup_pid(uint32_t pid)
                 pid_actual = pid;
             }
             break;
-        case 2://休眠
+        case 2: //休眠
             if (system_information.SYS_TIME > thread_information[pid].sleep_time)
             {
                 thread_information[pid].sleep_time = 0;
@@ -272,7 +325,7 @@ static inline uint32_t lookup_pid(uint32_t pid)
                 pid_actual = pid;
             }
             break; //顺延到下一个选项
-        case 3://休眠并挂起
+        case 3:    //休眠并挂起
             if (system_information.SYS_TIME > thread_information[pid].sleep_time)
             {
                 thread_information[pid].sleep_time = 0;
@@ -310,7 +363,7 @@ static inline void os_stars()
     uint32_t id = newlyBuild_thread(&eve_thread);
     thread_stars(id);
 #endif
-
+    PendSV_Init();
     //启动定时器
     sys_time_init(1000);
     //切换模式
@@ -319,6 +372,9 @@ static inline void os_stars()
     __set_PSP((uint32_t)&stack[THREAD_stack_size]);
     //线程处于启动状态(正常)
     thread_information[0].thread_state = 1;
+    //优先级设置
+    thread_information[0].priority = 4;
+    thread_information[0].actual_priority = 4;
     //重置运行时间
     system_information.SYS_TIME = 0;
     //开启中断
@@ -328,7 +384,7 @@ static inline void os_stars()
 #ifdef EVENT_STAND_BY
 static inline void awaken_thread(uint32_t id, uint32_t data)
 {
-    if (thread_information[id].thread_state!=3&&thread_information[id].thread_state!=4)
+    if (thread_information[id].thread_state != 3 && thread_information[id].thread_state != 4)
     {
         return;
     }
