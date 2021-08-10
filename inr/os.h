@@ -352,6 +352,7 @@ static inline uint32_t lookup_pid(uint32_t pid)
 *
 *   @return 无输出
 */
+
 static inline void os_stars()
 {
 #ifdef EVENT_STAND_BY
@@ -368,13 +369,16 @@ static inline void os_stars()
     sys_time_init(1000);
     //切换模式
     __set_CONTROL(0x02);
-    //写入PSP
-    __set_PSP((uint32_t)&stack[THREAD_stack_size]);
+    //PSP = MSP
+    __set_PSP(__get_MSP());
+    //MSP = &stack[THREAD_stack_size]
+    __set_MSP((uint32_t)&stack[THREAD_stack_size]);
     //线程处于启动状态(正常)
     thread_information[0].thread_state = 1;
     //优先级设置
     thread_information[0].priority = 4;
     thread_information[0].actual_priority = 4;
+    thread_information[0].name = "main thread";
     //重置运行时间
     system_information.SYS_TIME = 0;
     //开启中断
