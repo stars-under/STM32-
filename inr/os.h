@@ -293,12 +293,14 @@ uint32_t thread_Dormant();
 
 #endif
 
-/*
-*   功能:查找下一个可切换的pid
+/**
+*   功能:查找下一个可切换的pid（调度函数）
 *
 *   @param pid 当前pid
 *
 *   @return 无输出
+*  
+*   可以通过重构该函数达到更换调度函数的目的
 */
 static inline uint32_t lookup_pid(uint32_t pid)
 {
@@ -328,7 +330,7 @@ static inline uint32_t lookup_pid(uint32_t pid)
 
                 pid_actual = pid;
             }
-            break; //顺延到下一个选项
+            break;
         case 3:    //休眠并挂起
             if (system_information.SYS_TIME > thread_information[pid].sleep_time)
             {
