@@ -42,9 +42,9 @@ typedef struct os_system
     uint32_t SYS_TIME;
     //线程数量
     uint32_t thread_num;
-    #ifdef EXPERIMENT
+#ifdef EXPERIMENT
     uint32_t next_pid;
-    #endif // DEBUG
+#endif // DEBUG
 
 } os_system;
 
@@ -81,6 +81,8 @@ typedef struct THREAD
     unsigned int reboot_pc;
     //parameter
     unsigned int parameter;
+    //name
+    char *name;
 
 #if defined(__VFP_FP__) && !defined(__SOFTFP__)
     //M4需要EXC_RETURN(中断返回值判断是否启用了浮点运算单元)
@@ -146,6 +148,8 @@ typedef struct new_thread_information
     uint32_t parameter;
     //优先级
     unsigned char priority;
+    //thread_name
+    char *name;
 } new_thread_information, *new_thread_information_pointer;
 
 /*
@@ -352,7 +356,6 @@ static inline uint32_t lookup_pid(uint32_t pid)
 *
 *   @return 无输出
 */
-
 static inline void os_stars()
 {
 #ifdef EVENT_STAND_BY
