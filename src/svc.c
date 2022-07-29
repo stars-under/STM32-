@@ -19,8 +19,10 @@ unsigned int (*svc_server_function[SVC_SERVER_FUNCTION_MAX])(unsigned int r0, un
     newlyBuild_thread_stack,//2
     thread_stars,           //3
     0,                      //4
-    usart_re,               //5
-    u_printf_svc,
+    //usart_re,               //5
+    0,
+    //u_printf_svc,
+    0,
 };
 
 #define SVC_SERVER_ID(stack) (((char *)((unsigned int *)stack)[6])[-2])
