@@ -12,7 +12,10 @@ unsigned int u_printf_svc(const char *str, ...);
 
 #define SVC_SERVER_FUNCTION_MAX 30
 
-unsigned int (*svc_server_function[SVC_SERVER_FUNCTION_MAX])(unsigned int r0, unsigned int r1, unsigned int r2, unsigned int r3)=
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+
+uint32_t (*svc_server_function[SVC_SERVER_FUNCTION_MAX])(unsigned int r0, unsigned int r1, unsigned int r2, unsigned int r3)=
 {
     thread_sleep,           //0
     newlyBuild_thread,      //1
@@ -24,6 +27,8 @@ unsigned int (*svc_server_function[SVC_SERVER_FUNCTION_MAX])(unsigned int r0, un
     //u_printf_svc,
     0,
 };
+
+#pragma GCC diagnostic pop
 
 #define SVC_SERVER_ID(stack) (((char *)((unsigned int *)stack)[6])[-2])
 #define SVC_SERVER_R0(stack) (((unsigned int *)stack)[0])
